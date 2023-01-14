@@ -9,6 +9,8 @@ import http from "http";
 import { verify } from "jsonwebtoken";
 import "reflect-metadata";
 import { User } from "./entity/User";
+import { BookingAPI } from "./modules/bookings/resolvers/BookingsResolver";
+import { LandlordAPI } from "./modules/landlord/resolvers/LandlordResolver";
 import { createAccessToken, createRefreshToken } from "./utils/auth";
 import connectToDB from "./utils/connectToDB";
 import { createSchema } from "./utils/createSchema";
@@ -40,6 +42,12 @@ const main = async () => {
       },
     },
     introspection: true,
+    dataSources: (): any => {
+      return {
+        bookingsAPI: new BookingAPI(),
+        landlordAPI: new LandlordAPI(),
+      };
+    },
   });
 
   const app = Express();

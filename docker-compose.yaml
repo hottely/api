@@ -1,0 +1,47 @@
+version: "3.9"
+services:
+  postgres:
+    container_name: microservice_postgres
+    image: postgres:${POSTGRES_VERSION}
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_NAME}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - /data/postgres/
+    networks:
+      - microservices
+  bookings-service:
+    build:
+      context: ./services/bookings
+    networks:
+      - microservices
+    depends_on:
+      - postgres
+  landlord-service:
+    build:
+      context: ./services/landlord
+    networks:
+      - microservices
+    depends_on:
+      - postgres
+  gateway:
+    environment:
+      - DB_HOST=host.docker.internal
+      - DB_PORT=${POSTGRES_PORT}
+    build:
+      context: ./gateway
+    ports:
+      - "4000:4000"
+    networks:
+      - microservices
+    depends_on:
+      - bookings-service
+      - landlord-service
+      - postgres
+
+networks:
+  microservices:
+    driver: bridge

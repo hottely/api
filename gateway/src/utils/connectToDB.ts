@@ -11,6 +11,8 @@ const {
   DB_URL,
 } = process.env;
 
+console.log("DB_PORT", DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DB_HOST);
+
 const connectToDB = (drop: boolean = false) => {
   if (NODE_ENV === "production") {
     return createConnection({
