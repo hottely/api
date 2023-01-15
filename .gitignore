@@ -3,3 +3,4 @@ dist
 images
 *.logs
 .DS_STORE
+.idea
