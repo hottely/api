@@ -20,6 +20,15 @@ services:
       - microservices
     depends_on:
       - postgres
+  bookings-api-service:
+    build:
+      context: ./services/bookings-api
+    networks:
+      - microservices
+    depends_on:
+      - postgres
+    ports:
+      - ${FLASK_PORT}:${FLASK_PORT}
   landlord-service:
     build:
       context: ./services/landlord
