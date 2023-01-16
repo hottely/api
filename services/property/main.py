@@ -1,15 +1,49 @@
+import requests as requests
 import werkzeug
-from flask import Blueprint, render_template, redirect, url_for, jsonify, request, current_app
-import json
-from .models import User, Property, Favorite
+from flask import Blueprint, render_template, request
 from . import db
+from .models import Property, Favorite
 
 main = Blueprint('main', __name__)
+graphql_url = 'http://localhost:4000/api'
 
 
-def current_user_temp():
-    current_user = User.query.first()  # temp workaround
-    return current_user
+def query_graphql(query, token):
+    headers = {}
+    if token:
+        headers['Authorization'] = token
+    response = requests.post(graphql_url, data={'query': query}, headers=headers)
+    return response.json()
+
+
+def auth_graphql(token):  # return success, result (id in case of success)
+    return_value = {}
+    query = '''{
+      me {
+        id
+      }
+    }'''
+    result = query_graphql(query, token)
+    if 'error' in result or 'errors' in result or not result['data']['me']['id']:
+        success = False
+        current_user_id = None
+    else:
+        success = True
+        current_user_id = result['data']['me']['id']
+
+    return_value['success'] = success
+    return_value['current_user_id'] = current_user_id
+    return return_value
+
+
+def is_authenticated(request):
+    token = request.headers.get('Authorization')
+    return auth_graphql(token)['success']
+
+
+def get_current_user_id(request):
+    token = request.headers.get('Authorization')
+    return auth_graphql(token)['current_user_id']
 
 
 def convert_input_to(class_):
@@ -17,7 +51,9 @@ def convert_input_to(class_):
         def decorator(*args):
             obj = class_(**request.get_json())
             return f(obj)
+
         return decorator
+
     return wrap
 
 
@@ -29,6 +65,11 @@ def model_list_to_dict_list(model_list):
 @main.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return e, 400
+
+
+@main.errorhandler(werkzeug.exceptions.BadRequest)
+def handle_unauthorized():
+    return '', 401
 
 
 @main.route('/')
@@ -59,20 +100,20 @@ def get_amenities():
 
 @main.route('/favorites', methods=['GET'])
 def get_favorites():
-    current_user = current_user_temp()
-    if current_user:
-        favorites = Favorite.query.filter_by(user_id=current_user.id)
-        return model_list_to_dict_list(favorites)
-    else:
-        return handle_bad_request('no current user')
+    current_user_id = get_current_user_id(request)
+    if not current_user_id:
+        return handle_unauthorized()
+
+    favorites = Favorite.query.filter_by(user_id=current_user_id.id)
+    return model_list_to_dict_list(favorites)
 
 
 @main.route('/properties/<id>', methods=['GET'])
 def get_property(id):
-    current_user = current_user_temp()
+    current_user_id = get_current_user_id(request)
     property = Property.query.filter_by(id=id).first()
     property_dict = property.as_dict()
-    if current_user:
+    if current_user_id:
         favorite = Favorite.query.filter_by(property_id=property.id).first()
         favorite = favorite is not None
         property_dict['favorite'] = favorite
@@ -81,13 +122,16 @@ def get_property(id):
 
 @main.route('/properties/<id>/favorite', methods=['POST'])
 def favorite_property(id):
-    current_user = current_user_temp()
-    can_favorite = Favorite.query.filter_by(property_id=id, user_id=current_user.id).first() is None
+    current_user_id = get_current_user_id(request)
+    if not current_user_id:
+        return handle_unauthorized()
+
+    can_favorite = Favorite.query.filter_by(property_id=id, user_id=current_user_id).first() is None
     if can_favorite:
         property = Property.query.filter_by(id=id).first()
         if not property:
             handle_bad_request("property doesn't exist")
-        favorite = Favorite(user_id=current_user.id, property_id=property.id)
+        favorite = Favorite(user_id=current_user_id, property_id=property.id)
         db.session.add(favorite)
         db.session.commit()
         return ''
@@ -97,26 +141,14 @@ def favorite_property(id):
 
 @main.route('/properties/<id>/unfavorite', methods=['POST'])
 def unfavorite_property(id):
-    current_user = current_user_temp()
-    favorite = Favorite.query.filter_by(property_id=id, user_id=current_user.id).first()
+    current_user_id = get_current_user_id(request)
+    if not current_user_id:
+        return handle_unauthorized()
+
+    favorite = Favorite.query.filter_by(property_id=id, user_id=current_user_id).first()
     if favorite:
         db.session.delete(favorite)
         db.session.commit()
         return ''
     else:
         return handle_bad_request('is not favorite')
-
-
-# @main.route('/test', methods=['POST'])
-# def test():
-#     #user = User(email='a', password='a', first_name='a', last_name='a')
-#     #db.session.add(user)
-#
-#     user = current_user_temp()
-#     property = Property.query.first()
-#
-#     favorite = Favorite(user_id=user.id, property_id=property.id)
-#     db.session.add(favorite)
-#
-#     db.session.commit()
-#     return ''
