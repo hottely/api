@@ -29,6 +29,15 @@ services:
       - postgres
     ports:
       - ${FLASK_PORT}:${FLASK_PORT}
+  property-service:
+    build:
+      context: ./services/property
+    networks:
+      - microservices
+    depends_on:
+      - postgres
+    ports:
+      - ${FLASK_PORT}:${FLASK_PORT}
   landlord-service:
     build:
       context: ./services/landlord
