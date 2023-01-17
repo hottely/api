@@ -1,12 +1,15 @@
 import requests as requests
 import werkzeug
 from flask import Blueprint, render_template, request
+from marshmallow import ValidationError
 from . import db
-from .models import Property, Favorite
+from .models import Property, Favorite, PropertyImageSchema, PropertySchema
 
 main = Blueprint('main', __name__)
 graphql_url = 'http://localhost:4000/api'
 
+property_schema = PropertySchema()
+property_image_schema = PropertyImageSchema()
 
 def query_graphql(query, token):
     headers = {}
@@ -68,7 +71,7 @@ def handle_bad_request(e):
 
 
 @main.errorhandler(werkzeug.exceptions.BadRequest)
-def handle_unauthorized():
+def handle_unauthorized(e):
     return '', 401
 
 
@@ -80,13 +83,25 @@ def index():
 @main.route('/properties', methods=['GET'])
 def get_properties():
     properties = Property.query.all()
-    properties_dict = [property.as_dict() for property in properties]
+    properties_dict = property_schema.dump(properties, many=True)
     return properties_dict
 
 
 @main.route('/properties', methods=['POST'])
-@convert_input_to(Property)
-def add_property(property):
+def add_property():
+    current_user_id = get_current_user_id(request)
+    if not current_user_id:
+        return handle_unauthorized()
+
+    json_data = request.get_json()
+    if not json_data:
+        return handle_bad_request('No input')
+    try:
+        json_data['landlord_id'] = current_user_id
+        property = property_schema.load(json_data)
+    except ValidationError as err:
+        return err.messages, 422
+
     db.session.add(property)
     db.session.commit()
     return ''
@@ -112,7 +127,7 @@ def get_favorites():
 def get_property(id):
     current_user_id = get_current_user_id(request)
     property = Property.query.filter_by(id=id).first()
-    property_dict = property.as_dict()
+    property_dict = property_schema.dump(property)
     if current_user_id:
         favorite = Favorite.query.filter_by(property_id=property.id).first()
         favorite = favorite is not None

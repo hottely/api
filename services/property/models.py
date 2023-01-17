@@ -1,23 +1,15 @@
 import uuid
 
+from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import ForeignKey
 from sqlalchemy_utils.types.uuid import UUIDType
 from sqlalchemy.orm import relationship
 
 db = SQLAlchemy()
+ma = Marshmallow()
+
 UUIDType.cache_ok = False
-
-
-# class User(db.Model):
-#     id = db.Column(UUIDType, primary_key=True, default=uuid.uuid4)
-#     email = db.Column(db.String(100))
-#     password = db.Column(db.String(100), nullable=False)
-#     first_name = db.Column(db.String(100), nullable=False)
-#     last_name = db.Column(db.String(100), nullable=False)
-#
-#     def as_dict(self):
-#         return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
 
 
 class Property(db.Model):
@@ -31,10 +23,15 @@ class Property(db.Model):
     pets = db.Column(db.db.Boolean, nullable=False)
     price = db.Column(db.Float)
 
-    # landlord = relationship('User', foreign_keys='Property.landlord_id')
+    property_images = relationship('PropertyImage', backref='property')
 
-    def as_dict(self):
-        return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
+
+class PropertyImage(db.Model):
+    id = db.Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    url = db.Column(db.String)
+    property_id = db.Column(UUIDType, ForeignKey(Property.id))
+
+    # property = relationship('Property', foreign_keys='PropertyImage.property_id')
 
 
 class Favorite(db.Model):
@@ -42,8 +39,23 @@ class Favorite(db.Model):
     user_id = db.Column(db.Integer, nullable=False)
     property_id = db.Column(UUIDType, ForeignKey(Property.id))
 
-    # user = relationship('User', foreign_keys='Favorite.user_id')
     property = relationship('Property', foreign_keys='Favorite.property_id')
 
     def as_dict(self):
         return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
+
+
+class PropertyImageSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = PropertyImage
+        load_instance = True
+
+
+class PropertySchema(ma.SQLAlchemyAutoSchema):
+    property_images = ma.Nested(PropertyImageSchema, many=True)
+
+    class Meta:
+        model = Property
+        load_instance = True
+
+
