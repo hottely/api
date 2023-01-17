@@ -1,7 +1,6 @@
 import os
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from .models import *
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -10,10 +9,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 def create_app():
     app = Flask(__name__)
     # app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    # app.config['SECRET_KEY'] = 'fae626b437d694bb3a8b499f2394b6d6f575cd7e5a564ac8'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'db.sqlite')
 
     db.init_app(app)
+    ma.init_app(app)
     with app.app_context():
         db.create_all()
 
