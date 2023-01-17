@@ -1,9 +1,9 @@
+import { RequestOptions, RESTDataSource } from "apollo-datasource-rest";
 import GraphQLJSON from "graphql-type-json";
 import { Arg, Authorized, Ctx, Mutation, Query, Resolver } from "type-graphql";
-import { MyContext } from "../../../types/MyContext";
-import { RequestOptions, RESTDataSource } from "apollo-datasource-rest";
-import CurrentUser from "../../../utils/decorators/currentUser";
 import { User } from "../../../entity/User";
+import { MyContext } from "../../../types/MyContext";
+import CurrentUser from "../../../utils/decorators/currentUser";
 import { PropertyUploadInput } from "../inputs/PropertyUploadInput";
 
 export class PropertyAPI extends RESTDataSource {
@@ -33,6 +33,18 @@ export class PropertyAPI extends RESTDataSource {
   async createProperty(data: PropertyUploadInput): Promise<unknown> {
     return this.post<unknown>(`properties`, data);
   }
+
+  async getFavorites(): Promise<Property[]> {
+    return this.get<Property[]>(`favorites`);
+  }
+
+  async addToFavorites(propertyId: string): Promise<unknown> {
+    return this.post<unknown>(`properties/${propertyId}/favorite`);
+  }
+
+  async removeFromFavorites(propertyId: string): Promise<unknown> {
+    return this.post<unknown>(`properties/${propertyId}/unfavorite`);
+  }
 }
 
 export type Property = {
@@ -46,6 +58,7 @@ export type Property = {
   images: { url: string }[];
   amenities: { name: string }[];
   landlord_id: number;
+  favorite: boolean;
 };
 
 const thumbnailUrl =
@@ -66,6 +79,7 @@ export const propertiesMock: Property[] = [
     images: [{ url: thumbnailUrl }, { url: secondImage }],
     amenities: [{ name: "parking" }],
     landlord_id: 1,
+    favorite: false,
   },
 ];
 
@@ -117,6 +131,53 @@ export class PropertyResolver {
       // return dataSources.propertyAPI.getListings();
     } catch (error) {
       throw Error("failed to get listings");
+    }
+  }
+
+  @Authorized()
+  @Query(() => GraphQLJSON)
+  async getFavorites(
+    @Ctx() { dataSources }: MyContext,
+    @CurrentUser() currentUser: User
+  ): Promise<Property[]> {
+    try {
+      return propertiesMock.map((property) => ({
+        ...property,
+        favorite: true,
+      }));
+      // return dataSources.propertyAPI.getFavorites();
+    } catch (error) {
+      throw Error("failed to get favorites");
+    }
+  }
+
+  @Authorized()
+  @Mutation(() => Boolean)
+  async addToFavorites(
+    @Ctx() { dataSources }: MyContext,
+    @CurrentUser() currentUser: User,
+    @Arg("propertyId", () => String) propertyId: string
+  ) {
+    try {
+      return true;
+      // return dataSources.propertyAPI.addToFavorites(propertyId);
+    } catch (error) {
+      throw Error("failed to add to favorites");
+    }
+  }
+
+  @Authorized()
+  @Mutation(() => Boolean)
+  async removeFromFavorites(
+    @Ctx() { dataSources }: MyContext,
+    @CurrentUser() currentUser: User,
+    @Arg("propertyId", () => String) propertyId: string
+  ) {
+    try {
+      return true;
+      // return dataSources.propertyAPI.removeFromFavorites(propertyId);
+    } catch (error) {
+      throw Error("failed to add to favorites");
     }
   }
 }
