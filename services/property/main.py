@@ -173,6 +173,14 @@ def unfavorite_property(id):
         return handle_bad_request('is not favorite')
 
 
+@main.route('/properties/clean', methods=['DELETE'])
+@is_authenticated
+def delete_all():
+    db.session.query(Property).delete()
+    db.session.commit()
+    return ''
+
+
 @main.route('/listings', methods=['GET'])
 @is_authenticated
 def listings():
