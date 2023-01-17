@@ -24,6 +24,7 @@ class Property(db.Model):
     price = db.Column(db.Float)
 
     property_images = relationship('PropertyImage', backref='property')
+    amenities = relationship('Amenities', backref='property')
 
 
 class PropertyImage(db.Model):
@@ -31,7 +32,11 @@ class PropertyImage(db.Model):
     url = db.Column(db.String)
     property_id = db.Column(UUIDType, ForeignKey(Property.id))
 
-    # property = relationship('Property', foreign_keys='PropertyImage.property_id')
+
+class Amenities(db.Model):
+    id = db.Column(UUIDType, primary_key=True, default=uuid.uuid4)
+    name = db.Column(db.String)
+    property_id = db.Column(UUIDType, ForeignKey(Property.id))
 
 
 class Favorite(db.Model):
@@ -51,8 +56,15 @@ class PropertyImageSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
 
 
+class AmenitiesSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Amenities
+        load_instance = True
+
+
 class PropertySchema(ma.SQLAlchemyAutoSchema):
     property_images = ma.Nested(PropertyImageSchema, many=True)
+    amenities = ma.Nested(AmenitiesSchema, many=True)
 
     class Meta:
         model = Property

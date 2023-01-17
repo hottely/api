@@ -3,13 +3,13 @@ import werkzeug
 from flask import Blueprint, render_template, request
 from marshmallow import ValidationError
 from . import db
-from .models import Property, Favorite, PropertyImageSchema, PropertySchema
+from .models import Property, Favorite, PropertySchema
 
 main = Blueprint('main', __name__)
 graphql_url = 'http://localhost:4000/api'
 
 property_schema = PropertySchema()
-property_image_schema = PropertyImageSchema()
+
 
 def query_graphql(query, token):
     headers = {}
