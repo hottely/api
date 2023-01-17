@@ -83,35 +83,12 @@ export type Property = {
   favorite: boolean;
 };
 
-const thumbnailUrl =
-  "https://a0.muscache.com/im/pictures/a139a0fd-efbe-4b16-a5bb-18ec5671fe56.jpg?im_w=1200";
-
-const secondImage =
-  "https://images.pexels.com/photos/186077/pexels-photo-186077.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2";
-
-export const propertiesMock: Property[] = [
-  {
-    id: "1",
-    name: "Beautiful apartment in the heart of the city",
-    description: "description",
-    pets: true,
-    bathrooms: 1,
-    bedrooms: 2,
-    price: 100,
-    images: [{ url: thumbnailUrl }, { url: secondImage }],
-    amenities: [{ name: "parking" }],
-    landlord_id: 1,
-    favorite: false,
-  },
-];
-
 @Resolver()
 export class PropertyResolver {
   @Query(() => GraphQLJSON)
   async getProperties(@Ctx() { dataSources }: MyContext): Promise<Property[]> {
     try {
       return dataSources.propertyAPI.getProperties();
-      // return propertiesMock;
     } catch (error) {
       throw Error("failed to get properties");
     }
@@ -122,7 +99,6 @@ export class PropertyResolver {
     @Ctx() { dataSources }: MyContext,
     @Arg("propertyId", () => String) propertyId: string
   ) {
-    // return propertiesMock[0];
     return dataSources.propertyAPI.getProperty(propertyId);
   }
 
@@ -149,7 +125,6 @@ export class PropertyResolver {
     @CurrentUser() currentUser: User
   ): Promise<Property[]> {
     try {
-      // return propertiesMock;
       return dataSources.propertyAPI.getListings();
     } catch (error) {
       throw Error("failed to get listings");
@@ -163,10 +138,6 @@ export class PropertyResolver {
     @CurrentUser() currentUser: User
   ): Promise<Property[]> {
     try {
-      // return propertiesMock.map((property) => ({
-      //   ...property,
-      //   favorite: true,
-      // }));
       return dataSources.propertyAPI.getFavorites();
     } catch (error) {
       throw Error("failed to get favorites");
@@ -200,16 +171,6 @@ export class PropertyResolver {
       return true;
     } catch (error) {
       throw Error("failed to add to favorites");
-    }
-  }
-
-  @Mutation(() => Boolean)
-  async deleteAll(@Ctx() { dataSources }: MyContext) {
-    try {
-      await dataSources.propertyAPI.deleteAll();
-      return true;
-    } catch (error) {
-      throw Error("failed to delete all");
     }
   }
 }

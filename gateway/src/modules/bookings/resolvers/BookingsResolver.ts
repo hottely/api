@@ -1,29 +1,24 @@
+import { RESTDataSource } from "apollo-datasource-rest";
 import GraphQLJSON from "graphql-type-json";
 import { Arg, Authorized, Ctx, Mutation, Query, Resolver } from "type-graphql";
-import { MyContext } from "../../../types/MyContext";
-import { RESTDataSource } from "apollo-datasource-rest";
-import {
-  propertiesMock,
-  Property,
-} from "../../property/resolvers/PropertyResolver";
-import CurrentUser from "../../../utils/decorators/currentUser";
 import { User } from "../../../entity/User";
-import { v4 } from "uuid";
-import moment from "moment";
+import { MyContext } from "../../../types/MyContext";
+import CurrentUser from "../../../utils/decorators/currentUser";
+import { Property } from "../../property/resolvers/PropertyResolver";
 
 export class BookingAPI extends RESTDataSource {
   override baseURL = `http://bookings-api-service:5000/`;
 
-  async getBookings(): Promise<Booking[]> {
-    return this.get<Booking[]>("/bookings");
+  async getBookings(): Promise<BookingRaw[]> {
+    return this.get<BookingRaw[]>("/bookings");
   }
 
-  async getBookingsForUser(userId): Promise<Booking[]> {
-    return this.get<Booking[]>(`/bookings/user/${userId}`);
+  async getBookingsForUser(userId): Promise<BookingRaw[]> {
+    return this.get<BookingRaw[]>(`/bookings/user/${userId}`);
   }
 
-  async getBookingsForProperty(propertyId): Promise<Booking[]> {
-    return this.get<Booking[]>(`/bookings${propertyId}`);
+  async getBookingsForProperty(propertyId): Promise<BookingRaw[]> {
+    return this.get<BookingRaw[]>(`/bookings/${propertyId}`);
   }
 
   async createBooking(
@@ -33,8 +28,12 @@ export class BookingAPI extends RESTDataSource {
     endDate: string
   ): Promise<unknown> {
     return this.post<unknown>(
-      `/bookings${propertyId}/${startDate}/${endDate}/${userId}`
+      `/create_booking/${propertyId}/${startDate}/${endDate}/${userId}`
     );
+  }
+
+  async deleteBookings(): Promise<unknown> {
+    return this.delete<unknown>("/bookings");
   }
 }
 
@@ -46,12 +45,34 @@ type Booking = {
   endDate: string;
 };
 
+type BookingRaw = {
+  id: string;
+  userId: number;
+  property_id: string;
+  startDate: string;
+  endDate: string;
+};
+
 @Resolver()
 export class BookingsResolver {
   @Query(() => GraphQLJSON)
   async getBookings(@Ctx() { dataSources }: MyContext): Promise<Booking[]> {
     try {
-      return dataSources.bookingsAPI.getBookings();
+      const [raw, allProperties] = await Promise.all([
+        dataSources.bookingsAPI.getBookings(),
+        dataSources.propertyAPI.getProperties(),
+      ]);
+
+      const bookings = raw.map((booking) => {
+        return {
+          ...booking,
+          property: allProperties.find(
+            (property) => property.id === booking.property_id
+          ),
+        };
+      });
+
+      return bookings;
     } catch (error) {
       throw Error("failed to get bookings");
     }
@@ -64,18 +85,21 @@ export class BookingsResolver {
     @CurrentUser() currentUser: User
   ): Promise<Booking[]> {
     try {
-      const bookingMock = [
-        {
-          id: v4(),
-          userId: currentUser.id,
-          property: propertiesMock[0],
-          startDate: moment().add(8, "weeks").toISOString(),
-          endDate: moment().add(9, "weeks").toISOString(),
-        },
-      ];
+      const [raw, allProperties] = await Promise.all([
+        dataSources.bookingsAPI.getBookingsForUser(currentUser.id),
+        dataSources.propertyAPI.getProperties(),
+      ]);
 
-      return bookingMock;
-      // return dataSources.bookingsAPI.getBookingsForUser(currentUser.id);
+      const bookings = raw.map((booking) => {
+        return {
+          ...booking,
+          property: allProperties.find(
+            (property) => property.id === booking.property_id
+          ),
+        };
+      });
+
+      return bookings;
     } catch (error) {
       throw Error("failed to get bookings");
     }
@@ -89,18 +113,21 @@ export class BookingsResolver {
     @Arg("propertyId", () => String) propertyId: string
   ): Promise<Booking[]> {
     try {
-      const bookingMock = [
-        {
-          id: v4(),
-          userId: currentUser.id,
-          property: propertiesMock[0],
-          startDate: moment().add(8, "weeks").toISOString(),
-          endDate: moment().add(9, "weeks").toISOString(),
-        },
-      ];
+      const [raw, allProperties] = await Promise.all([
+        dataSources.bookingsAPI.getBookingsForProperty(propertyId),
+        dataSources.propertyAPI.getProperties(),
+      ]);
 
-      return bookingMock;
-      // return dataSources.bookingsAPI.getBookingsForProperty(propertyId);
+      const bookings = raw.map((booking) => {
+        return {
+          ...booking,
+          property: allProperties.find(
+            (property) => property.id === booking.property_id
+          ),
+        };
+      });
+
+      return bookings;
     } catch (error) {
       throw Error("failed to get bookings");
     }
@@ -116,12 +143,12 @@ export class BookingsResolver {
     @Arg("endDate", () => String) endDate: string
   ) {
     try {
-      // await dataSources.bookingsAPI.createBooking(
-      //   currentUser.id,
-      //   propertyId,
-      //   startDate,
-      //   endDate
-      // );
+      await dataSources.bookingsAPI.createBooking(
+        currentUser.id,
+        propertyId,
+        startDate,
+        endDate
+      );
 
       return true;
     } catch (error) {
