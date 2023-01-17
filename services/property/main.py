@@ -169,12 +169,12 @@ def unfavorite_property(id):
         return handle_bad_request('is not favorite')
 
 
-@main.route('/listings', methods=['POST'])
+@main.route('/listings', methods=['GET'])
 def listings():
     current_user_id = get_current_user_id(request)
     if not current_user_id:
         return handle_unauthorized()
 
     properties = Property.query.filter_by(landlord_id=current_user_id).all()
-    properties_dict = [property.as_dict() for property in properties]
+    properties_dict = property_schema.dump(properties, many=True)
     return properties_dict
