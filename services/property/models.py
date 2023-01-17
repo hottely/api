@@ -69,5 +69,3 @@ class PropertySchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Property
         load_instance = True
-
-

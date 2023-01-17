@@ -71,7 +71,7 @@ def handle_bad_request(e):
 
 
 @main.errorhandler(werkzeug.exceptions.BadRequest)
-def handle_unauthorized(e):
+def handle_unauthorized():
     return '', 401
 
 
