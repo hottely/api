@@ -16,6 +16,8 @@ export class PropertyAPI extends RESTDataSource {
         this.context.req.headers.authorization
       );
     }
+
+    request.headers.set("Content-Type", "application/json");
   }
 
   async getProperties(): Promise<Property[]> {
@@ -31,7 +33,23 @@ export class PropertyAPI extends RESTDataSource {
   }
 
   async createProperty(data: PropertyUploadInput): Promise<unknown> {
-    return this.post<unknown>(`properties`, data);
+    const reqData = {
+      ...data,
+      amenities: data.amenities.map((a) => {
+        return {
+          name: a,
+        };
+      }),
+      images: data.images.map((src) => {
+        return {
+          url: src,
+        };
+      }),
+    };
+
+    console.log("Data to send", reqData);
+
+    return this.post<unknown>(`properties`, reqData);
   }
 
   async getFavorites(): Promise<Property[]> {
@@ -44,6 +62,10 @@ export class PropertyAPI extends RESTDataSource {
 
   async removeFromFavorites(propertyId: string): Promise<unknown> {
     return this.post<unknown>(`properties/${propertyId}/unfavorite`);
+  }
+
+  async deleteAll(): Promise<unknown> {
+    return this.delete<unknown>(`properties/clean`);
   }
 }
 
@@ -178,6 +200,16 @@ export class PropertyResolver {
       return true;
     } catch (error) {
       throw Error("failed to add to favorites");
+    }
+  }
+
+  @Mutation(() => Boolean)
+  async deleteAll(@Ctx() { dataSources }: MyContext) {
+    try {
+      await dataSources.propertyAPI.deleteAll();
+      return true;
+    } catch (error) {
+      throw Error("failed to delete all");
     }
   }
 }

@@ -116,7 +116,18 @@ def add_property():
 
 @main.route('/amenities', methods=['GET'])
 def get_amenities():
-    amenities = ["pool", "washer"]
+    amenities = [
+        "air conditioning",
+        "bar",
+        "bike storage",
+        "cinema",
+        "concierge",
+        "electricity included",
+        "gas included",
+        "internet",
+        "outside area",
+        "parking"
+    ]
     return amenities
 
 
@@ -177,6 +188,7 @@ def unfavorite_property(id):
 @is_authenticated
 def delete_all():
     db.session.query(Property).delete()
+    db.session.query(Favorite).delete()
     db.session.commit()
     return ''
 
