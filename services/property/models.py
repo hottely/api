@@ -23,7 +23,7 @@ class Property(db.Model):
     pets = db.Column(db.db.Boolean, nullable=False)
     price = db.Column(db.Float)
 
-    property_images = relationship('PropertyImage', backref='property')
+    images = relationship('PropertyImage', backref='property')
     amenities = relationship('Amenities', backref='property')
 
 
@@ -63,7 +63,7 @@ class AmenitiesSchema(ma.SQLAlchemyAutoSchema):
 
 
 class PropertySchema(ma.SQLAlchemyAutoSchema):
-    property_images = ma.Nested(PropertyImageSchema, many=True)
+    images = ma.Nested(PropertyImageSchema, many=True)
     amenities = ma.Nested(AmenitiesSchema, many=True)
 
     class Meta:

@@ -23,6 +23,8 @@ services:
       context: ./services/property
     networks:
       - microservices
+    ports:
+      - "5000:5000"
   other-service:
     build:
       context: ./services/other
@@ -39,7 +41,9 @@ services:
     ports:
       - "4000:4000"
     networks:
-      - microservices
+      microservices:
+          aliases:
+            - gateway
     depends_on:
       - bookings-api-service
       - property-service

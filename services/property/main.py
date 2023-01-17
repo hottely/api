@@ -8,7 +8,7 @@ from . import db
 from .models import Property, Favorite, PropertySchema
 
 main = Blueprint('main', __name__)
-graphql_url = 'http://localhost:4000/api'
+graphql_url = 'http://gateway:4000/api'
 
 property_schema = PropertySchema()
 

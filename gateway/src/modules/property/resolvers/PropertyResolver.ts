@@ -88,8 +88,8 @@ export class PropertyResolver {
   @Query(() => GraphQLJSON)
   async getProperties(@Ctx() { dataSources }: MyContext): Promise<Property[]> {
     try {
-      // return dataSources.propertyAPI.getProperties();
-      return propertiesMock;
+      return dataSources.propertyAPI.getProperties();
+      // return propertiesMock;
     } catch (error) {
       throw Error("failed to get properties");
     }
@@ -100,8 +100,8 @@ export class PropertyResolver {
     @Ctx() { dataSources }: MyContext,
     @Arg("propertyId", () => String) propertyId: string
   ) {
-    return propertiesMock[0];
-    // return dataSources.propertyAPI.getProperty(propertyId);
+    // return propertiesMock[0];
+    return dataSources.propertyAPI.getProperty(propertyId);
   }
 
   @Authorized()
@@ -127,8 +127,8 @@ export class PropertyResolver {
     @CurrentUser() currentUser: User
   ): Promise<Property[]> {
     try {
-      return propertiesMock;
-      // return dataSources.propertyAPI.getListings();
+      // return propertiesMock;
+      return dataSources.propertyAPI.getListings();
     } catch (error) {
       throw Error("failed to get listings");
     }
@@ -141,11 +141,11 @@ export class PropertyResolver {
     @CurrentUser() currentUser: User
   ): Promise<Property[]> {
     try {
-      return propertiesMock.map((property) => ({
-        ...property,
-        favorite: true,
-      }));
-      // return dataSources.propertyAPI.getFavorites();
+      // return propertiesMock.map((property) => ({
+      //   ...property,
+      //   favorite: true,
+      // }));
+      return dataSources.propertyAPI.getFavorites();
     } catch (error) {
       throw Error("failed to get favorites");
     }
@@ -159,8 +159,8 @@ export class PropertyResolver {
     @Arg("propertyId", () => String) propertyId: string
   ) {
     try {
+      await dataSources.propertyAPI.addToFavorites(propertyId);
       return true;
-      // return dataSources.propertyAPI.addToFavorites(propertyId);
     } catch (error) {
       throw Error("failed to add to favorites");
     }
@@ -174,8 +174,8 @@ export class PropertyResolver {
     @Arg("propertyId", () => String) propertyId: string
   ) {
     try {
+      await dataSources.propertyAPI.removeFromFavorites(propertyId);
       return true;
-      // return dataSources.propertyAPI.removeFromFavorites(propertyId);
     } catch (error) {
       throw Error("failed to add to favorites");
     }
