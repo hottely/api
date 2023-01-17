@@ -126,7 +126,7 @@ def get_favorites():
     current_user_id = get_current_user_id(request)
 
     favorites = Favorite.query.filter_by(user_id=current_user_id)
-    properties = [favorite.property for favorite in favorites]
+    properties = [favorite.property for favorite in favorites if favorite.property]
     properties_dict = property_schema.dump(properties, many=True)
     return properties_dict
 
