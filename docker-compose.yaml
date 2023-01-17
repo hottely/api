@@ -13,34 +13,19 @@ services:
       - /data/postgres/
     networks:
       - microservices
-  bookings-service:
-    build:
-      context: ./services/bookings
-    networks:
-      - microservices
-    depends_on:
-      - postgres
   bookings-api-service:
     build:
       context: ./services/bookings-api
     networks:
       - microservices
-    depends_on:
-      - postgres
-    ports:
-      - ${FLASK_PORT}:${FLASK_PORT}
   property-service:
     build:
       context: ./services/property
     networks:
       - microservices
-    depends_on:
-      - postgres
-    ports:
-      - ${FLASK_PORT}:${FLASK_PORT}
-  landlord-service:
+  other-service:
     build:
-      context: ./services/landlord
+      context: ./services/other
     networks:
       - microservices
     depends_on:
@@ -56,8 +41,8 @@ services:
     networks:
       - microservices
     depends_on:
-      - bookings-service
-      - landlord-service
+      - bookings-api-service
+      - property-service
       - postgres
 
 networks:

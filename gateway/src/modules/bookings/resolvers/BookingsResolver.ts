@@ -4,10 +4,10 @@ import { MyContext } from "../../../types/MyContext";
 import { RESTDataSource } from "apollo-datasource-rest";
 
 export class BookingAPI extends RESTDataSource {
-  override baseURL = `http://bookings-service:3000/`;
+  override baseURL = `http://bookings-api-service:5000/`;
 
   async getBookings(): Promise<Booking[]> {
-    return this.get<Booking[]>("/");
+    return this.get<Booking[]>("/bookings");
   }
 }
 
