@@ -51,6 +51,12 @@ def get_current_user_id(request):
     return auth_graphql(token)['current_user_id']
 
 
+def is_favorite(property_id, user_id):
+    favorite = Favorite.query.filter_by(property_id=property_id, user_id=user_id).first()
+    favorite = favorite is not None
+    return favorite
+
+
 def is_authenticated(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -78,8 +84,14 @@ def index():
 
 @main.route('/properties', methods=['GET'])
 def get_properties():
+    current_user_id = get_current_user_id(request)
+
     properties = Property.query.all()
     properties_dict = property_schema.dump(properties, many=True)
+    if current_user_id:
+        for property_dict in properties_dict:
+            property_dict['favorite'] = is_favorite(property_dict['id'], current_user_id)
+
     return properties_dict
 
 
@@ -125,9 +137,7 @@ def get_property(id):
     property = Property.query.filter_by(id=id).first()
     property_dict = property_schema.dump(property)
     if current_user_id:
-        favorite = Favorite.query.filter_by(property_id=property.id).first()
-        favorite = favorite is not None
-        property_dict['favorite'] = favorite
+        property_dict['favorite'] = is_favorite(property.id, current_user_id)
     return property_dict
 
 
