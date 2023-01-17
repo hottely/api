@@ -1,3 +1,5 @@
+from functools import wraps
+
 import requests as requests
 import werkzeug
 from flask import Blueprint, render_template, request
@@ -39,7 +41,7 @@ def auth_graphql(token):  # return success, result (id in case of success)
     return return_value
 
 
-def is_authenticated(request):
+def is_request_authenticated(request):
     token = request.headers.get('Authorization')
     return auth_graphql(token)['success']
 
@@ -49,15 +51,14 @@ def get_current_user_id(request):
     return auth_graphql(token)['current_user_id']
 
 
-def convert_input_to(class_):
-    def wrap(f):
-        def decorator(*args):
-            obj = class_(**request.get_json())
-            return f(obj)
-
-        return decorator
-
-    return wrap
+def is_authenticated(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        authenticated = is_request_authenticated(request)
+        if not authenticated:
+            return handle_unauthorized()
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @main.errorhandler(werkzeug.exceptions.BadRequest)
@@ -83,10 +84,9 @@ def get_properties():
 
 
 @main.route('/properties', methods=['POST'])
+@is_authenticated
 def add_property():
     current_user_id = get_current_user_id(request)
-    if not current_user_id:
-        return handle_unauthorized()
 
     json_data = request.get_json()
     if not json_data:
@@ -109,10 +109,9 @@ def get_amenities():
 
 
 @main.route('/favorites', methods=['GET'])
+@is_authenticated
 def get_favorites():
     current_user_id = get_current_user_id(request)
-    if not current_user_id:
-        return handle_unauthorized()
 
     favorites = Favorite.query.filter_by(user_id=current_user_id)
     properties = [favorite.property for favorite in favorites]
@@ -133,10 +132,9 @@ def get_property(id):
 
 
 @main.route('/properties/<id>/favorite', methods=['POST'])
+@is_authenticated
 def favorite_property(id):
     current_user_id = get_current_user_id(request)
-    if not current_user_id:
-        return handle_unauthorized()
 
     can_favorite = Favorite.query.filter_by(property_id=id, user_id=current_user_id).first() is None
     if can_favorite:
@@ -152,10 +150,9 @@ def favorite_property(id):
 
 
 @main.route('/properties/<id>/unfavorite', methods=['POST'])
+@is_authenticated
 def unfavorite_property(id):
     current_user_id = get_current_user_id(request)
-    if not current_user_id:
-        return handle_unauthorized()
 
     favorite = Favorite.query.filter_by(property_id=id, user_id=current_user_id).first()
     if favorite:
@@ -167,10 +164,9 @@ def unfavorite_property(id):
 
 
 @main.route('/listings', methods=['GET'])
+@is_authenticated
 def listings():
     current_user_id = get_current_user_id(request)
-    if not current_user_id:
-        return handle_unauthorized()
 
     properties = Property.query.filter_by(landlord_id=current_user_id).all()
     properties_dict = property_schema.dump(properties, many=True)
