@@ -60,11 +60,6 @@ def convert_input_to(class_):
     return wrap
 
 
-def model_list_to_dict_list(model_list):
-    dict_list = [model.as_dict() for model in model_list]
-    return dict_list
-
-
 @main.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
     return e, 400
@@ -119,8 +114,10 @@ def get_favorites():
     if not current_user_id:
         return handle_unauthorized()
 
-    favorites = Favorite.query.filter_by(user_id=current_user_id.id)
-    return model_list_to_dict_list(favorites)
+    favorites = Favorite.query.filter_by(user_id=current_user_id)
+    properties = [favorite.property for favorite in favorites]
+    properties_dict = property_schema.dump(properties, many=True)
+    return properties_dict
 
 
 @main.route('/properties/<id>', methods=['GET'])
